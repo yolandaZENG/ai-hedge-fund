@@ -57,9 +57,12 @@ def warren_buffett_agent(state: AgentState):
         market_cap = get_market_cap(ticker, end_date)
 
         progress.update_status("warren_buffett_agent", ticker, "Analyzing fundamentals")
-        # Analyze fundamentals
+        #! Analyze fundamentals
+        #! ROE, Debt to Equity Rqtio, Operqting Mqrgins, Current Ratio
         fundamental_analysis = analyze_fundamentals(metrics)
 
+        #! Analyze if the ticker has consistent growth
+        #! all(earnings_values[i] > earnings_values[i + 1] for i in range(len(earnings_values) - 1))
         progress.update_status("warren_buffett_agent", ticker, "Analyzing consistency")
         consistency_analysis = analyze_consistency(financial_line_items)
 

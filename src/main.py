@@ -100,6 +100,7 @@ def start(state: AgentState):
 
 
 def create_workflow(selected_analysts=None):
+    #! generate the langgraph workflow
     """Create the workflow with selected analysts."""
     workflow = StateGraph(AgentState)
     workflow.add_node("start_node", start)
@@ -152,7 +153,8 @@ if __name__ == "__main__":
     # Parse tickers from comma-separated string
     tickers = [ticker.strip() for ticker in args.tickers.split(",")]
 
-    # Select analysts
+    # Select analysts 
+    #! (defined in the utils/analyst.py file)
     selected_analysts = None
     choices = questionary.checkbox(
         "Select your AI analysts.",
@@ -216,6 +218,7 @@ if __name__ == "__main__":
         print(f"\nSelected {Fore.CYAN}Ollama{Style.RESET_ALL} model: {Fore.GREEN + Style.BRIGHT}{model_name}{Style.RESET_ALL}\n")
     else:
         # Use the standard cloud-based LLM selection
+        #! defined in src/llm/api_models.json
         model_choice = questionary.select(
             "Select your LLM model:",
             choices=[questionary.Choice(display, value=(name, provider)) for display, name, provider in LLM_ORDER],
