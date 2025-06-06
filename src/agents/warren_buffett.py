@@ -66,9 +66,11 @@ def warren_buffett_agent(state: AgentState):
         progress.update_status("warren_buffett_agent", ticker, "Analyzing consistency")
         consistency_analysis = analyze_consistency(financial_line_items)
 
+        #! evaluate if consistent and stable growth
         progress.update_status("warren_buffett_agent", ticker, "Analyzing competitive moat")
         moat_analysis = analyze_moat(metrics)
 
+        #! check if the gross margin is growing and stable (enough percent of time larger than 0.5)
         progress.update_status("warren_buffett_agent", ticker, "Analyzing pricing power")
         pricing_power_analysis = analyze_pricing_power(financial_line_items, metrics)
 
@@ -257,6 +259,8 @@ def analyze_moat(metrics: list) -> dict[str, any]:
     historical_roes = [m.return_on_equity for m in metrics if m.return_on_equity is not None]
     historical_roics = [m.return_on_invested_capital for m in metrics if hasattr(m, 'return_on_invested_capital') and m.return_on_invested_capital is not None]
     
+    #! for latest years of ROEs, check how many percent of time has the value >= 0.15
+    #! add some score, if 80% of the time larger than 0.15, less point if 60% larger than 0.15
     if len(historical_roes) >= 5:
         # Check for consistently high ROE (>15% for most periods)
         high_roe_periods = sum(1 for roe in historical_roes if roe > 0.15)
@@ -275,6 +279,7 @@ def analyze_moat(metrics: list) -> dict[str, any]:
         reasoning.append("Insufficient ROE history for moat analysis")
 
     # 2. Operating Margin Stability (Pricing Power Indicator)
+    #! check if the long term avg margin >0.1, and the recent 3 periods value> the last 3 periods value
     historical_margins = [m.operating_margin for m in metrics if m.operating_margin is not None]
     if len(historical_margins) >= 5:
         # Check for stable or improving margins (sign of pricing power)
@@ -294,6 +299,7 @@ def analyze_moat(metrics: list) -> dict[str, any]:
             reasoning.append(f"Low operating margins (avg: {avg_margin:.1%}) suggest limited pricing power")
     
     # 3. Asset Efficiency and Scale Advantages
+    #! check if the sale/asset >=5, for scale advantage
     if len(metrics) >= 5:
         # Check asset turnover trends (revenue efficiency)
         asset_turnovers = []
@@ -307,6 +313,8 @@ def analyze_moat(metrics: list) -> dict[str, any]:
                 reasoning.append("Efficient asset utilization suggests operational moat")
     
     # 4. Competitive Position Strength (inferred from trend stability)
+    #! 1 - (roe_variance ** 0.5) / roe_avg if roe_avg > 0 else 0
+    #! overall_stability = (roe_stability + margin_stability) / 2
     if len(historical_roes) >= 5 and len(historical_margins) >= 5:
         # Calculate coefficient of variation (stability measure)
         roe_avg = sum(historical_roes) / len(historical_roes)
@@ -627,6 +635,7 @@ def analyze_book_value_growth(financial_line_items: list) -> dict[str, any]:
     reasoning = []
     
     # Calculate book value growth (shareholders equity / shares outstanding)
+    #! BVPS = （Total Shareholder Equity - Preferred Stock） ÷ Total Common Shares Outstanding
     book_values = []
     for item in financial_line_items:
         if hasattr(item, 'shareholders_equity') and hasattr(item, 'outstanding_shares'):
@@ -693,7 +702,7 @@ def analyze_pricing_power(financial_line_items: list, metrics: list) -> dict[str
     for item in financial_line_items:
         if hasattr(item, 'gross_margin') and item.gross_margin is not None:
             gross_margins.append(item.gross_margin)
-    
+    #! recent gross margins larger than older margin +2%
     if len(gross_margins) >= 3:
         # Check margin stability/improvement
         recent_avg = sum(gross_margins[:2]) / 2 if len(gross_margins) >= 2 else gross_margins[0]
@@ -712,6 +721,7 @@ def analyze_pricing_power(financial_line_items: list, metrics: list) -> dict[str
             reasoning.append("Declining gross margins may indicate pricing pressure")
     
     # Check if company has been able to maintain high margins consistently
+    #! the percent of time the gross margin > 0.5, add some score
     if gross_margins:
         avg_margin = sum(gross_margins) / len(gross_margins)
         if avg_margin > 0.5:  # 50%+ gross margins
