@@ -58,7 +58,7 @@ def warren_buffett_agent(state: AgentState):
 
         progress.update_status("warren_buffett_agent", ticker, "Analyzing fundamentals")
         #! Analyze fundamentals
-        #! ROE, Debt to Equity Rqtio, Operqting Mqrgins, Current Ratio
+        #! ROE, Debt to Equity Ratio, Operqting Mqrgins, Current Ratio
         fundamental_analysis = analyze_fundamentals(metrics)
 
         #! Analyze if the ticker has consistent growth
@@ -74,12 +74,20 @@ def warren_buffett_agent(state: AgentState):
         progress.update_status("warren_buffett_agent", ticker, "Analyzing pricing power")
         pricing_power_analysis = analyze_pricing_power(financial_line_items, metrics)
 
+        #! calculate the book value per share
+        #! BVPS = （Total Shareholder Equity - Preferred Stock） ÷ Total Common Shares Outst
+        #! check the percent of time, BVPS is increasing
+        #! check the compound annual growth rate of BVPS
         progress.update_status("warren_buffett_agent", ticker, "Analyzing book value growth")
         book_value_analysis = analyze_book_value_growth(financial_line_items)
 
+        #! check if the company is buy-back , and not issuing new shares (this might cause the dilusion)
+        #! if the company has good record of paying dividends
         progress.update_status("warren_buffett_agent", ticker, "Analyzing management quality")
         mgmt_analysis = analyze_management_quality(financial_line_items)
 
+
+        #! DCF method for calculating the present value 
         progress.update_status("warren_buffett_agent", ticker, "Calculating intrinsic value")
         intrinsic_value_analysis = calculate_intrinsic_value(financial_line_items)
 
@@ -125,6 +133,8 @@ def warren_buffett_agent(state: AgentState):
         }
 
         progress.update_status("warren_buffett_agent", ticker, "Generating Warren Buffett analysis")
+
+        #! LLM Process
         buffett_output = generate_buffett_output(
             ticker=ticker,
             analysis_data=analysis_data,
@@ -393,6 +403,7 @@ def calculate_owner_earnings(financial_line_items: list) -> dict[str, any]:
     latest = financial_line_items[0]
     details = []
 
+    #! Owner Earnings = Net Income + Depreciation/Amortization - Maintenance CapEx - Working Capital Changes
     # Core components
     net_income = latest.net_income
     depreciation = latest.depreciation_and_amortization
@@ -515,6 +526,7 @@ def calculate_intrinsic_value(financial_line_items: list) -> dict[str, any]:
         return {"intrinsic_value": None, "details": ["Insufficient data for reliable valuation"]}
 
     # Calculate owner earnings with better methodology
+    #! Owner Earnings = Net Income + Depreciation/Amortization - Maintenance CapEx - Working Capital Changes
     earnings_data = calculate_owner_earnings(financial_line_items)
     if not earnings_data["owner_earnings"]:
         return {"intrinsic_value": None, "details": earnings_data["details"]}
@@ -652,6 +664,7 @@ def analyze_book_value_growth(financial_line_items: list) -> dict[str, any]:
         
         growth_rate = growth_periods / (len(book_values) - 1)
         
+        #! calculate the percent of time , book value is increasing
         if growth_rate >= 0.8:  # 80% of periods show growth
             score += 3
             reasoning.append("Consistent book value per share growth (Buffett's favorite metric)")
@@ -664,7 +677,7 @@ def analyze_book_value_growth(financial_line_items: list) -> dict[str, any]:
         else:
             reasoning.append("Inconsistent book value per share growth")
             
-        # Calculate compound annual growth rate
+        #! Calculate compound annual growth rate
         if len(book_values) >= 2:
             oldest_bv = book_values[-1]
             latest_bv = book_values[0]
